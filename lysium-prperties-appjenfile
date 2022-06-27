@@ -1,0 +1,51 @@
+pipeline{
+    agent {label "node1"}
+    tools{
+        maven "Maven 3.8.4"
+    }
+    stages{
+        stage("1. Codeclone"){
+            steps{
+               git credentialsId: 'Git hub-Cred', url: 'https://github.com/Alabama007/web-app.git'
+            }
+        }
+        stage("2. Buils"){
+            steps{
+                sh "mvn clean package"
+            }
+        }
+        stage("3. Code Quality"){
+            steps{
+                sh "mvn sonar:sonar"
+            }
+        }
+        stage("4. Artifacts"){
+            steps{
+                sh "mvn deploy"
+            }
+        }
+        stage("5. Deploy to UAT"){
+            steps{
+                    deploy adapters: [tomcat9(credentialsId: 'tomcatpasswd', path: '', url: 'http://54.158.30.222:7000/')], contextPath: null, war: 'target/*.war'
+            }
+        }
+        stage("6. Approval"){
+            steps{
+                timeout(time:5, unit: 'DAYS'){
+                input message: 'Aprroval for production'
+    }
+    }
+}
+        stage("7.Deploy to PROD"){
+            steps{
+                   deploy adapters: [tomcat9(credentialsId: 'tomcatpasswd', path: '', url: 'http://54.158.30.222:7000/')], contextPath: null, war: 'target/*.war'
+ 
+            }
+        }
+        stage("8. E-mail Notification"){
+            steps{
+                   emailext body: 'This is Built Success', subject: 'Build Success', to: 'alabaokunade1@gmail.com'
+             }
+        }
+    }
+}
